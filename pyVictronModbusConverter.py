@@ -132,11 +132,17 @@ def main():
 
         
         for pageStartIndex in range(0, countEntries, registerOverviewPagesEntryCount):
-            print(fillStringUpWithSpaces("Index", colCharSize_registerOverviewIndex) + fillStringUpWithSpaces("Address", colCharSize_registerModbusAdr) + fillStringUpWithSpaces("Description", colCharSize_registerDescription) + fillStringUpWithSpaces("Modbus Path", colCharSize_registerDbusObjPath))
+            print(fillStringUpWithSpaces("Index", colCharSize_registerOverviewIndex) + \
+                  fillStringUpWithSpaces("Address", colCharSize_registerModbusAdr) + \
+                  fillStringUpWithSpaces("Description", colCharSize_registerDescription) + \
+                  fillStringUpWithSpaces("Modbus Path", colCharSize_registerDbusObjPath))
             print("----------------------------------------------------------------------------------------------------------------------------")
             for entryIndex in range(pageStartIndex, pageStartIndex + registerOverviewPagesEntryCount):
                 if entryIndex < (countEntries):
-                    print(fillStringUpWithSpaces(str(entryIndex), colCharSize_registerOverviewIndex) + fillStringUpWithSpaces(str(dict_modbusAdr[entryIndex]), colCharSize_registerModbusAdr) + fillStringUpWithSpaces(str(dict_names[entryIndex]), colCharSize_registerDescription) + fillStringUpWithSpaces(str(dict_paths[entryIndex]), colCharSize_registerDbusObjPath))
+                    print(fillStringUpWithSpaces(str(entryIndex), colCharSize_registerOverviewIndex) + \
+                          fillStringUpWithSpaces(str(dict_modbusAdr[entryIndex]), colCharSize_registerModbusAdr) + \
+                          fillStringUpWithSpaces(str(dict_names[entryIndex]), colCharSize_registerDescription) + \
+                          fillStringUpWithSpaces(str(dict_paths[entryIndex]), colCharSize_registerDbusObjPath))
             print("")
             input()
             cls()
