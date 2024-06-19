@@ -4,7 +4,18 @@ This is a python script, that uses the Victron Excel file to create ready to use
 
 # Python dependencies:
 
-- Pandas
+- Pandas 
+```
+Ubuntu:
+sudo apt install python3-pandas
+
+Fedora:
+sudo dnf install python3-pandas
+
+For venv:
+pip3 install pandas
+```
+
 
 # Operational dependencies:
 
@@ -19,3 +30,13 @@ This is a python script, that uses the Victron Excel file to create ready to use
 3. User input which register indices to use as colon separated string
 4. User input for the corresponding Victron Modbus addresses (Victron GX settings UI)
 5. Output is written to the console, optionally it can be saved as file with timestamp.
+
+
+Tested with the lates Victron Modbus sheet (Rev 48) and python3.
+
+
+# ToDo:
+
+- Download of the Victron sheet for Github if not specified
+- Specify local sheet as parameter
+- Proper error handling
