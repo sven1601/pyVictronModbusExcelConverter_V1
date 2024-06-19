@@ -2,6 +2,7 @@ import os.path
 import os
 import time
 import pandas
+import requests
 
 colCharSize_registerOverviewIndex = 10
 colCharSize_registerDescription = 60
@@ -10,6 +11,8 @@ colCharSize_registerDbusObjPath = 60
 registerOverviewPagesEntryCount = 30
 victronExcelFileHeaderRowIndexNumber = 1
 baseStr = "modbus:\n  - name: victron\n    type: tcp\n    host: x.x.x.x\n    port: 502\n    sensors:"
+fileURL = "https://raw.githubusercontent.com/victronenergy/dbus_modbustcp/master/CCGX-Modbus-TCP-register-list.xlsx"
+fileTarget = "ModbusRegisterList.xlsx"
 spaces = '      '
 
 def cls(): os.system('cls' if os.name=='nt' else 'clear')
@@ -49,32 +52,41 @@ def convertDictEntryToHassString(xlsxDict: dict, row: int, unitIDDict: dict) -> 
         expString += spaces + 'data_type: ' + str(value_type) + '\n'
 
     value_scale = xlsxDict.get('Scalefactor').get(int(row))
-    expString += spaces + 'scale: ' + str(1 / value_scale) + '\n'
+    expString += spaces + 'scale: ' + str(f'{(1 / value_scale):g}') + '\n'
 
     value_unit = xlsxDict.get('dbus-unit').get(int(row))
     value_unit = value_unit.split()[0]
-    if len(value_unit) <= 5:
-        expString += spaces + 'unit_of_measurement: ' + '\"' + value_unit + '\"' + '\n'
+    if len(value_unit) <= 5:        
         value_deviceClass = ""
         value_precision = 0
         if value_unit == "W" or value_unit == "VA":
             value_deviceClass = "power"
             value_precision = 0
+            expString += spaces + 'device_class: ' + str(value_deviceClass) + '\n'
+            expString += spaces + 'precision: ' + str(value_precision) + '\n'
+            value_unit = "W"
         elif value_unit == "kWh":
             value_deviceClass = "energy"
             value_precision = 1
+            expString += spaces + 'device_class: ' + str(value_deviceClass) + '\n'
+            expString += spaces + 'precision: ' + str(value_precision) + '\n'
         elif value_unit == "V":
             value_deviceClass = "voltage"
             value_precision = 1
+            expString += spaces + 'device_class: ' + str(value_deviceClass) + '\n'
+            expString += spaces + 'precision: ' + str(value_precision) + '\n'
         elif value_unit == "A":
             value_deviceClass = "current"
             value_precision = 1
-        expString += spaces + 'device_class: ' + str(value_deviceClass) + '\n'
-        expString += spaces + 'precision: ' + str(value_precision) + '\n'
+            expString += spaces + 'device_class: ' + str(value_deviceClass) + '\n'
+            expString += spaces + 'precision: ' + str(value_precision) + '\n'
+        
+        expString += spaces + 'unit_of_measurement: ' + '\"' + value_unit + '\"' + '\n'
+        
     else:
         expString += spaces + '# Unit:\t' + str(value_unit) + '\n'
 
-    expString += spaces + 'scan_interval: 5' + '\n'
+    # expString += spaces + 'scan_interval: 5' + '\n'   # Maybe for features, default is 15sec
 
     value_range = xlsxDict.get('Range').get(int(row))
     expString += spaces + '# Range:\t' + str(value_range) + '\n'
@@ -92,22 +104,34 @@ def getAllCellValuesFromColumn(xlsxDict: dict, colName: str):
 def main():
     cls()
     print("----------------------------------------------------------------------------------------------------------------------------")
-    print("Welcome to the Homeassistant Victron Modbus Register Converter for configuration.yaml")
-    print("First we need the actual Victron Modubus Register Definition file (xlsx file) from the Victron website for parsing its entries")
-    print("Please get it and specify its location here:")
+    print("Welcome to the Victron GX Modbus Register Converter for Homeassistant configuration.yaml")
+    print("First we need the actual CCGX Modubus Register Definition file (xlsx file) to parse the available entries.")
     print("----------------------------------------------------------------------------------------------------------------------------")
 
-    fileValidFlag = False
-    while fileValidFlag == False:
-        filepath = input("File: ")
-        cls()
-        if not os.path.isfile(filepath):
-            print("Specified file does not exist, try again.")
-        elif 'xlsx' not in filepath:
-            print("Specified file is not a xlsx file, try again.")
-        else:
-            print("File \'" + filepath + "\'is valid")
+    inputStr = input("Do you want to load the latest CCGX Modbus register file from the Victron Github repository? [Y/n]: ")
+    if inputStr.lower() == "y" or len(inputStr) == 0:
+        try:
+            r = requests.get(fileURL, allow_redirects=True)
+            open(fileTarget, 'wb').write(r.content)
+            filepath = "./" + fileTarget
+            print("File download successful")
             fileValidFlag = True
+        except:
+            print("Something went wrong while loading the file, aborting the script.")
+            exit(-2)
+    else:
+        print("Please get it and specify its location here:")
+
+        fileValidFlag = False
+        while fileValidFlag == False:
+            filepath = input("File: ")
+            if not os.path.isfile(filepath):
+                print("Specified file does not exist, try again.")
+            elif 'xlsx' not in filepath:
+                print("Specified file is not a xlsx file, try again.")
+            else:
+                print("Ok, the specified file is valid")
+                fileValidFlag = True
 
     dict_complete = parseExcelToDict(filepath, 'Field list', victronExcelFileHeaderRowIndexNumber)
     dict_names = getAllCellValuesFromColumn(dict_complete, 'description')
@@ -123,12 +147,11 @@ def main():
     cls()
 
     if inputStr.lower() == "y" or len(inputStr) == 0:
-        print("Ok, now I'll list all registers with index numbers in a page of " + str(registerOverviewPagesEntryCount) + " items")
+        print("Ok, now I'll list all registers with index numbers in pages of " + str(registerOverviewPagesEntryCount) + " items")
         print("Please note the indices of the entry that you wanna use")
-        print("Next page with any key, abort with Ctrl + C")
+        print("Next page with any key, to abort listing type \"end\"")
         input()
         cls()
-
         
         for pageStartIndex in range(0, countEntries, registerOverviewPagesEntryCount):
             print(fillStringUpWithSpaces("Index", colCharSize_registerOverviewIndex) + \
@@ -143,8 +166,11 @@ def main():
                           fillStringUpWithSpaces(str(dict_names[entryIndex]), colCharSize_registerDescription) + \
                           fillStringUpWithSpaces(str(dict_paths[entryIndex]), colCharSize_registerDbusObjPath))
             print("")
-            input()
+            userInput = input()
+            if len(userInput) > 0 and "end" in userInput.lower():
+                break
             cls()
+
     cls()
 
     print("Ok, now we need the register indices, that I should convert.")
@@ -160,10 +186,11 @@ def main():
             list_serviceNamesSelected.append(dict_serviceName.get(int(selectedEntry)))
 
     cls()
-    print("Selection accepted, you have selected items with " + str(len(list_serviceNamesSelected)) + " different service names.")
-    print("For these items we need the unit IDs from you Victron System.")
-    print("Please log in to your inverter, browse to XXXX and enter the unit IDs here as number:")
-    print()
+    print("Selection accepted, you have selected items with " + str(len(list_serviceNamesSelected)) + " different service name(s).")
+    print("For these items we need the Unit IDs from your GX System.")
+    print("Please log in to the UI of your GX device and browse to Settings => Services => ModbusTCP => Set it to active and click on \'Available services\'")
+    print("There look for the foollowing service and type the corresponding Unit ID here as number:")
+    print("")
 
     dict_idMappings = {} 
     for i in range(len(list_serviceNamesSelected)):
@@ -177,7 +204,7 @@ def main():
     cls()
     
     print("Generated Output:")
-    print("(Please remember to edit IP address, and port settings)")
+    print("(Please remember to edit IP address, and port settings to your needs)")
     print("----------------------------------------------------------------------------------------------------------------------------")
     print("")
     outStr = baseStr + '\n'
