@@ -108,6 +108,7 @@ def main():
     print("First we need the actual CCGX Modubus Register Definition file (xlsx file) to parse the available entries.")
     print("----------------------------------------------------------------------------------------------------------------------------")
 
+    fileValidFlag = False
     inputStr = input("Do you want to load the latest CCGX Modbus register file from the Victron Github repository? [Y/n]: ")
     if inputStr.lower() == "y" or len(inputStr) == 0:
         try:
@@ -120,9 +121,7 @@ def main():
             print("Something went wrong while loading the file, aborting the script.")
             exit(-2)
     else:
-        print("Please get it and specify its location here:")
-
-        fileValidFlag = False
+        print("Please get it and specify its location here:")        
         while fileValidFlag == False:
             filepath = input("File: ")
             if not os.path.isfile(filepath):
